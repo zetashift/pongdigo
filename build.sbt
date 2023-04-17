@@ -14,15 +14,13 @@ lazy val root = project
         )
     }
   )
-  .settings( // Indigo specific settings
+  .settings(
     showCursor := true,
-    title := "My Game",
+    title := "Pongdigo",
     gameAssetsDirectory := "assets",
     windowStartWidth := 720, // Width of Electron window, used with `indigoRun`.
     windowStartHeight := 480, // Height of Electron window, used with `indigoRun`.
     libraryDependencies ++= Seq(
-      "io.indigoengine" %%% "indigo" % "0.14.0",
-      "io.indigoengine" %%% "indigo-extras" % "0.14.0",
-      "io.indigoengine" %%% "indigo-json-circe" % "0.14.0"
+      "io.indigoengine" %%% "indigo" % "0.15.0-RC1",
     )
   )
