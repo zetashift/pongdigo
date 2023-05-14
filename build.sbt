@@ -22,5 +22,6 @@ lazy val root = project
     windowStartHeight := 480, // Height of Electron window, used with `indigoRun`.
     libraryDependencies ++= Seq(
       "io.indigoengine" %%% "indigo" % "0.15.0-RC1",
+      "io.indigoengine" %%% "indigo-extras" % "0.15.0-RC1"
     )
   )
