@@ -3,10 +3,51 @@ package pongdigo
 import indigo.*
 import scala.scalajs.js.annotation.JSExportTopLevel
 import indigoextras.geometry.BoundingBox
+import indigoextras.geometry.LineSegment
+import indigoextras.geometry.Vertex
 
-case class Paddle(position: Point, size: Size = Size(20, 60))
-case class Ball(velocity: Point, direction: Point, position: Point)
 case class Scoreboard(leftScore: Int, rightScore: Int)
+case class Paddle(position: Point, size: Size = Size(20, 60))
+
+case class Ball(position: Point, radius: Int, velocity: Int, force: Vector2):
+  def withForce(value: Vector2): Ball = this.copy(force = value)
+  def withVelocity(value: Int): Ball = this.copy(velocity = value)
+
+  def moveBy(amount: Point): Ball =
+    this.copy(position = position + amount)
+
+// Code thanks to https://github.com/davesmith00000/pong/blob/main/src/main/scala/pkg/Pong.scala
+object Ball:
+  def applyForce(b: Ball, f: Vector2): Ball =
+    b.moveBy((Vector2(b.velocity) * f).toPoint).withForce(f)
+
+  def moveBall(
+      ball: Ball,
+      walls: Batch[Rectangle],
+      paddles: Batch[Rectangle]
+  ): Ball =
+    val current = ball.position
+    val ballAdvance = applyForce(ball, ball.force)
+
+    val line = LineSegment(
+      Vertex.fromPoint(current),
+      Vertex.fromPoint(
+        ballAdvance.position + (Point(ball.radius) * ball.force.toPoint)
+      )
+    )
+
+    val wallCollision =
+      walls.exists(w => BoundingBox.fromRectangle(w).lineIntersects(line))
+    val paddleCollision =
+      paddles.exists(p => BoundingBox.fromRectangle(p).lineIntersects(line))
+
+    val nextForce = Vector2(
+      if paddleCollision then -ball.force.x else ball.force.x,
+      if wallCollision then -ball.force.y else ball.force.y
+    )
+
+    if wallCollision || paddleCollision then applyForce(ball, nextForce)
+    else ballAdvance
 
 case class PongGame(
     player: Paddle,
@@ -17,7 +58,14 @@ case class PongGame(
     ballShape: util.Circle,
     scoreboard: Scoreboard,
     viewPort: Size
-)
+):
+  def walls: Batch[Rectangle] =
+    Batch(
+      Rectangle(0, 0, this.viewPort.width, 10),
+      Rectangle(0, this.viewPort.height, this.viewPort.width, 10)
+    )
+
+  def paddles: Batch[Rectangle] = Batch(this.playerShape, this.cpuShape)
 
 object PongGame:
 
@@ -33,12 +81,13 @@ object PongGame:
       Rectangle(cpu.size.width, cpu.size.height)
 
     val ball = Ball(
-      Point(2, 0),
-      Point(3, 4),
-      Point(viewPort.width / 2, viewPort.height / 2)
+      Point(viewPort.width / 2, viewPort.height / 2),
+      10,
+      3,
+      Vector2(1, 2)
     )
     val ballShape =
-      util.Circle((Point(viewPort.width / 2, viewPort.height / 2)), 10)
+      util.Circle((Point(viewPort.width / 2, viewPort.height / 2)), ball.radius)
 
     val scoreboard = Scoreboard(0, 0)
 
@@ -110,6 +159,8 @@ object Pongdigo extends IndigoDemo[Size, Size, PongGame, Unit]:
   ): Outcome[Startup[Size]] =
     Outcome(Startup.Success(bootData))
 
+  val ballStart = Ball(Point(270, 195), 10, 3, Vector2(1, 1))
+
   def updateModel(
       context: FrameContext[Size],
       model: PongGame
@@ -127,18 +178,24 @@ object Pongdigo extends IndigoDemo[Size, Size, PongGame, Unit]:
         )
       )
     case FrameTick =>
-      val ball = model.ball.copy(position = model.ball.position + Point(3, 0))
-      val paddle = BoundingBox
-        .fromRectangle(model.cpuShape)
-        .sdf(Vector2(model.ballShape.x, model.ballShape.y))
+      val nextBall = Ball.moveBall(model.ball, model.walls, model.paddles)
 
-      if paddle < model.ballShape.radius then
-        val ball =
-          model.ball.copy(position = model.ball.position + Point(-3, 0))
+      def giveVec =
+        val choose = List(1, -1)
+        Vector2(
+          choose(context.dice.roll(2) - 1),
+          choose(context.dice.roll(2) - 1)
+        )
 
-        Outcome(model.copy(ball = ball))
-      else Outcome(model.copy(ball = ball))
-
+      if nextBall.position.x < -10 then
+        Outcome(
+          model.copy(ball = ballStart.withForce(giveVec))
+        )
+      else if nextBall.position.x > model.viewPort.width then
+        Outcome(
+          model.copy(ball = ballStart.withForce(giveVec))
+        )
+      else Outcome(model.copy(ball = nextBall))
     case _ => Outcome(model)
 
   def present(
@@ -155,7 +212,11 @@ object Pongdigo extends IndigoDemo[Size, Size, PongGame, Unit]:
       Fill.Color(RGBA.White)
     )
     val ballCircle =
-      Shape.Circle(model.ball.position, 10, Fill.Color(RGBA.Coral))
+      Shape.Circle(
+        model.ball.position,
+        model.ball.radius,
+        Fill.Color(RGBA.Coral)
+      )
 
     Outcome(
       SceneUpdateFragment(
