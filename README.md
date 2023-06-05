@@ -4,6 +4,10 @@
 
 It's pong! Using Scala 3 and the [Indigo game engine](https://indigoengine.io/)
 
+### Getting Started
+
+There is an included Nix flake that includes all the runtimes needed to start developing.
+
 ### Starting dev server
 
 First thing in order to run this project, is to install vite dependency. To do it run
