@@ -5,7 +5,7 @@ lazy val root = project
   .enablePlugins(ScalaJSPlugin)
   .settings(
     name := "pongdigo",
-    scalaVersion := "3.2.2",
+    scalaVersion := "3.3.0",
     scalacOptions ++= Seq("-encoding", "utf-8", "-deprecation", "-feature"),
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
@@ -21,7 +21,6 @@ lazy val root = project
     windowStartWidth := 720, // Width of Electron window, used with `indigoRun`.
     windowStartHeight := 480, // Height of Electron window, used with `indigoRun`.
     libraryDependencies ++= Seq(
-      "io.indigoengine" %%% "indigo" % "0.15.0-RC1",
-      "io.indigoengine" %%% "indigo-extras" % "0.15.0-RC1"
+      "io.indigoengine" %%% "indigo" % "0.15.0-RC2"
     )
   )

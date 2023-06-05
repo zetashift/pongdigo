@@ -2,9 +2,6 @@ package pongdigo
 
 import indigo.*
 import scala.scalajs.js.annotation.JSExportTopLevel
-import indigoextras.geometry.BoundingBox
-import indigoextras.geometry.LineSegment
-import indigoextras.geometry.Vertex
 
 case class Scoreboard(leftScore: Int, rightScore: Int)
 case class Paddle(position: Point, size: Size = Size(20, 60))
